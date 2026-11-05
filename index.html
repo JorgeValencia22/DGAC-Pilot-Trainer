@@ -20,6 +20,7 @@ select{width:100%;padding:14px 10px;font-size:19px;border:1px solid #000;border-
 .opt b{flex:none}
 .opt.ok{border:3px solid var(--ok);background:var(--oks)}.opt.bad{border:3px solid var(--bad);background:var(--bads)}
 .msg{font-weight:700;margin-top:16px;min-height:30px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.why{font-weight:400;color:#000;margin-top:12px}.why.src{font-size:17px;color:var(--mut)}.why.tap{font-weight:700;margin-top:18px}
 .foot{font-size:15px;color:var(--mut);margin-top:28px}
 </style>
 <div class="wrap" id="app"></div>
@@ -37,6 +38,8 @@ const year=d=>(d.name.match(/20\d\d/)||[''])[0];
 const items=()=>{const r=[];bank().subjects.forEach((s,i)=>{if(S.sub<0||S.sub===i)s.q.forEach(q=>r.push([i,q]))});return r};
 const count=l=>l.filter(([i,q])=>S.st[id(i,q)]===1).length;
 let timer=null,pos=-1;
+
+const source=(si,q)=>`${bank().subjects[si].name}, pregunta ${q.n}, página ${q.p} del banco ${year(bank())}. `+(q.src==='cruce'?'La respuesta está resaltada en la copia del banco 2014, donde aparece esta misma pregunta.':'La respuesta está resaltada en esta copia del banco.');
 
 function home(){
   clearTimeout(timer);document.onclick=null;
@@ -77,9 +80,11 @@ function ask(){
     ev.stopPropagation();
     const good=o.dataset.l===q.a;S.st[id(si,q)]=good?1:0;save();
     document.querySelectorAll('.opt').forEach(x=>{x.onclick=null;if(x.dataset.l===q.a)x.classList.add('ok');else if(x===o)x.classList.add('bad')});
-    const m=document.getElementById('msg');m.className='msg '+(good?'ok':'bad');m.textContent=good?'Correcta':'Incorrecta. La correcta es la '+q.a;
+    const m=document.getElementById('msg');m.className='msg '+(good?'ok':'bad');const right=q.o.find(x=>x[0]===q.a);
+    if(good)m.textContent='Correcta';
+    else{m.innerHTML=`Incorrecta<div class="why"><b>Respuesta correcta:</b><br>${esc(q.a)}. ${esc(right[1])}</div><div class="why src"><b>Según el documento:</b> ${esc(source(si,q))}</div><div class="why tap">Toca la pantalla para seguir</div>`;m.scrollIntoView({block:'nearest'})}
     const next=()=>{clearTimeout(timer);ask()};
-    timer=setTimeout(next,good?1000:4000);
+    if(good)timer=setTimeout(next,1000);
     document.onclick=e=>{if(!e.target.closest('.back'))next()};
     document.getElementById('h').onclick=e=>{e.stopPropagation();home()};
   });
